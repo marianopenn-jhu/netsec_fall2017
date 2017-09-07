@@ -4,6 +4,7 @@
 
 from playground.network.packet import PacketType
 from playground.network.packet.fieldtypes import BOOL, UINT32, STRING
+import unittest
 
 class RequestFlip(PacketType):
     DEFINITION_IDENTIFIER = "lab1b.mpennin3.RequestFlip"
@@ -29,29 +30,39 @@ class FlipResult(PacketType):
             ("observedFrequency", STRING)
             ]
 
-def unitTest():
+class UnitTest(unittest.TestCase):
 
-    flipPacket = RequestFlip()
-    flipPacket.headOrTail = True
-    flipPacket.numFlips = 10
-    packetBytes = flipPacket.__serialize__()
-    flipPacketDes = PacketType.Deserialize(packetBytes)
-    assert flipPacket == flipPacketDes
+    #Test request flip packet
+    def test1(self):
+        flipPacket = RequestFlip()
+        flipPacket.headOrTail = True
+        flipPacket.numFlips = 10
+        packetBytes = flipPacket.__serialize__()
+        flipPacketDes = PacketType.Deserialize(packetBytes)
+        assert flipPacket == flipPacketDes
 
-    #Test Winner Packet
-    winnerPacket = CurrentWinner()
-    packetBytesWinner = winnerPacket.__serialize__()
-    winnerPacketDes = PacketType.Deserialize(packetBytesWinner)
-    assert winnerPacket == winnerPacketDes
+    #Test request flip packet with bad numFlips value
+    def test2(self):
+        flipPacket = RequestFlip()
+        flipPacket.headOrTail = True
+        with self.assertRaises(ValueError):
+            flipPacket.numFlips = -10.5
+
+    #Test winner packet
+    def test3(self):
+        winnerPacket = CurrentWinner()
+        packetBytesWinner = winnerPacket.__serialize__()
+        winnerPacketDes = PacketType.Deserialize(packetBytesWinner)
+        assert winnerPacket == winnerPacketDes
 
     #Test flip result packet
-    flipResult = FlipResult()
-    flipResult.successOrFailure = True
-    flipResult.observedFrequency = "51.0%"
-    flipResPacketBytes = flipResult.__serialize__()
-    flipResultPacketDes = flipResult.Deserialize(flipResPacketBytes)
-    assert flipResult == flipResultPacketDes
-
+    def test4(self):
+        flipResult = FlipResult()
+        flipResult.successOrFailure = True
+        flipResult.observedFrequency = "51%"
+        flipResPacketBytes = flipResult.__serialize__()
+        flipResultPacketDes = flipResult.Deserialize(flipResPacketBytes)
+        assert flipResult == flipResultPacketDes
 
 if __name__ == '__main__':
-    unitTest()
+    unittest.main()
