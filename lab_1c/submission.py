@@ -124,10 +124,12 @@ class UnitTest(unittest.TestCase):
         testData.numFlips = 1000
         client = CoinClientProtocol(testData)
         server = CoinServerProtocol()
-        transportToServer = MockTransportToProtocol(server)
-        transportToClient = MockTransportToProtocol(client)
-        server.connection_made(transportToClient)
+        transportToServer = MockTransportToProtocol(myProtocol=server)
+        transportToClient = MockTransportToProtocol(myProtocol=client)
+        transportToServer.setRemoteTransport(transportToClient)
+        transportToClient.setRemoteTransport(transportToServer)
         client.connection_made(transportToServer)
+        server.connection_made(transportToClient)
 
     def test_winner_function(self):
         asyncio.set_event_loop(TestLoopEx())
@@ -136,14 +138,16 @@ class UnitTest(unittest.TestCase):
         testData.numFlips = 1000
         client = CoinClientProtocol(testData)
         server = CoinServerProtocol()
-        transportToServer = MockTransportToProtocol(server)
-        transportToClient = MockTransportToProtocol(client)
-        server.connection_made(transportToClient)
+        transportToServer = MockTransportToProtocol(myProtocol=server)
+        transportToClient = MockTransportToProtocol(myProtocol=client)
+        transportToServer.setRemoteTransport(transportToClient)
+        transportToClient.setRemoteTransport(transportToServer)
         client.connection_made(transportToServer)
+        server.connection_made(transportToClient)
 
         winner = CurrentWinner()
         client = CoinClientProtocol(winner)
-        client.connection_made(transportToServer), Face
+        client.connection_made(transportToServer)
 
 
 class main():
