@@ -85,7 +85,6 @@ class CoinServerProtocol(asyncio.Protocol):
 logging.basicConfig(level=logging.DEBUG)
 loop = asyncio.get_event_loop()
 loop.set_debug(1)
-#coro = loop.create_server(CoinServerProtocol, '127.0.0.1', 8080)
 coro = connect.getConnector().create_playground_server(CoinServerProtocol,8080)
 server = loop.run_until_complete(coro)
 try:

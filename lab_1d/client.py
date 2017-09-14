@@ -12,8 +12,7 @@ import unittest
 import logging
 
 class CoinClientProtocol(asyncio.Protocol):
-    def __init__(self, data):
-        self.requestPacket = data
+    def __init__(self):
         self._deserializer = PacketType.Deserializer()
         self.transport = None
 
@@ -24,9 +23,12 @@ class CoinClientProtocol(asyncio.Protocol):
             return Face.TAIL
 
     def connection_made(self, transport):
+        print("connection made from client")
         self.transport = transport
-        self.transport.write(self.requestPacket.__serialize__())
-        print('---Data sent on client: {!r}'.format(self.requestPacket))
+
+    def send(self, data):
+        self.transport.write(data.__serialize__())
+        print('---Data sent on client: {!r}'.format(data))
 
     def data_received(self, data):
         self._deserializer.update(data)
@@ -50,14 +52,33 @@ class CoinClientProtocol(asyncio.Protocol):
         print('---Stop the event loop')
         self.loop.stop()
 
+class ClientControl:
+    def __init__(self):
+        self.txProtocol = None
+
+    def buildProtocol(self):
+        return CoinClientProtocol(None)
+
+    def connect(self, txProtocol):
+        self.txProtocol = txProtocol
+        print("Client connection to server established.")
+
+    def send(self, data):
+        self.txProtocol.send(data)
+
+
+
 logging.basicConfig(level=logging.DEBUG)
 loop = asyncio.get_event_loop()
 loop.set_debug(1)
+control = ClientControl()
 testData = RequestFlip()
 testData.headOrTail = True
 testData.numFlips = 1000
-#coro = loop.create_connection(lambda: CoinClientProtocol(testData),'127.0.0.1', 8080)
-coro = connect.getConnector().create_playground_connection(CoinClientProtocol(testData), '20174.1.1.1',8080)
-loop.run_until_complete(coro)
+coro = connect.getConnector().create_playground_connection(CoinClientProtocol, '20174.1.1.1',8080)
+transport, protocol = loop.run_until_complete(coro)
+control.connect(protocol)
+asyncio.sleep(3)
+control.send(testData)
 loop.run_forever()
 loop.close()
