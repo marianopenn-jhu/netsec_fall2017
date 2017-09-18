@@ -26,6 +26,7 @@ class CoinServerProtocol(StackingProtocol):
         print("connection_made server is called")
         self.transport = transport
         self._deserializer = PacketType.Deserializer()
+        self._higherProtocol = None
 
     def connection_lost(self, reason=None):
         print("Lost connection to client. Cleaning up.")
@@ -85,7 +86,22 @@ class CoinServerProtocol(StackingProtocol):
             winner_record["FACE"] = Face.TIE
             return (Face.TIE, heads)
 
-class PassThrough(StackingProtocol):
+class PassThrough1(StackingProtocol):
+    def __init__(self, higherProtocol=None):
+        self._higherProtocol = higherProtocol
+        self.Transport = None
+    def higherProtocol(self):
+        return self._higherProtocol
+    def setHigherProtocol(self, higherProtocol):
+        self._higherProtocol = higherProtocol
+    def connection_made(self, transport):
+        self.higherProtocol().connection_made(transport)
+    def data_received(self, data):
+        self.higherProtocol().data_received(data)
+    def connection_lost(self):
+        self.higherProtocol().connection_lost(None)
+
+class PassThrough2(StackingProtocol):
     def __init__(self, higherProtocol=None):
         self._higherProtocol = higherProtocol
         self.Transport = None
@@ -103,10 +119,10 @@ class PassThrough(StackingProtocol):
 logging.basicConfig(level=logging.DEBUG)
 loop = asyncio.get_event_loop()
 loop.set_debug(1)
-f = StackingProtocolFactory(lambda:PassThrough(), lambda:CoinServerProtocol())
+f = StackingProtocolFactory(lambda:PassThrough1(), lambda:PassThrough2())
 ptConnector = playground.Connector(protocolStack=f)
 playground.setConnector("passthrough", ptConnector)
-coro = connect.getConnector("passthrough").create_playground_server(CoinServerProtocol,8080)
+coro = connect.getConnector("passthrough").create_playground_server(lambda: CoinServerProtocol(),8080)
 server = loop.run_until_complete(coro)
 
 try:

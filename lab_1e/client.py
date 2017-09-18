@@ -18,6 +18,7 @@ class CoinClientProtocol(StackingProtocol):
     def __init__(self):
         self._deserializer = PacketType.Deserializer()
         self.transport = None
+        self._higherProtocol = None
 
     def parseFace(self, face):
         if face == 0:
@@ -69,7 +70,22 @@ class ClientControl:
     def send(self, data):
         self.txProtocol.send(data)
 
-class PassThrough(StackingProtocol):
+class PassThrough1(StackingProtocol):
+    def __init__(self, higherProtocol=None):
+        self._higherProtocol = higherProtocol
+        self.Transport = None
+    def higherProtocol(self):
+        return self._higherProtocol
+    def setHigherProtocol(self, higherProtocol):
+        self._higherProtocol = higherProtocol
+    def connection_made(self, transport):
+        self.higherProtocol().connection_made(transport)
+    def data_received(self, data):
+        self.higherProtocol().data_received(data)
+    def connection_lost(self):
+        self.higherProtocol().connection_lost(None)
+
+class PassThrough2(StackingProtocol):
     def __init__(self, higherProtocol=None):
         self._higherProtocol = higherProtocol
         self.Transport = None
@@ -85,7 +101,6 @@ class PassThrough(StackingProtocol):
         self.higherProtocol().connection_lost(None)
 
 
-
 logging.basicConfig(level=logging.DEBUG)
 loop = asyncio.get_event_loop()
 loop.set_debug(1)
@@ -93,10 +108,10 @@ control = ClientControl()
 testData = RequestFlip()
 testData.headOrTail = True
 testData.numFlips = 1000
-f = StackingProtocolFactory(lambda:PassThrough(), lambda:CoinClientProtocol())
+f = StackingProtocolFactory(lambda:PassThrough1(), lambda:PassThrough2())
 ptConnector = playground.Connector(protocolStack=f)
 playground.setConnector("passthrough", ptConnector)
-coro = connect.getConnector("passthrough").create_playground_connection(CoinClientProtocol, '20174.1.1.1',8080)
+coro = connect.getConnector("passthrough").create_playground_connection(lambda:CoinClientProtocol(), '20174.1.1.1',8080)
 transport, protocol = loop.run_until_complete(coro)
 control.connect(protocol)
 asyncio.sleep(3)
